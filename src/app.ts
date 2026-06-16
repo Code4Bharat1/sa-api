@@ -1,0 +1,44 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
+import { env } from './config/env.js';
+import { errorMiddleware } from './middlewares/error.middleware.js';
+import { apiRateLimiter } from './middlewares/rateLimiter.js';
+
+import authRoutes from './routes/auth.routes.js';
+import ticketRoutes from './routes/ticket.routes.js';
+import userRoutes from './routes/user.routes.js';
+import reportRoutes from './routes/report.routes.js';
+import sseRoutes from './routes/sse.routes.js';
+
+const app = express();
+
+app.use(helmet());
+app.use(
+  cors({
+    origin: env.FRONTEND_URL,
+    credentials: true,
+  })
+);
+app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(apiRateLimiter);
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.use('/api/auth', authRoutes);
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/dashboard', reportRoutes);
+app.use('/api/sse', sseRoutes);
+
+app.use(errorMiddleware);
+
+export default app;
