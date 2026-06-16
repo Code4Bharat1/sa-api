@@ -12,6 +12,6 @@ router.get('/technicians', rbac(ROLES.ADMIN, ROLES.SUPERADMIN), listTechnicians)
 router.get('/', rbac(ROLES.ADMIN, ROLES.SUPERADMIN), listUsers);
 router.get('/:id', rbac(ROLES.ADMIN, ROLES.SUPERADMIN), getUser);
 router.post('/', rbac(ROLES.SUPERADMIN), createUser);
-router.patch('/:id', rbac(ROLES.SUPERADMIN), updateUser);
+router.patch('/:id', rbac(ROLES.ADMIN, ROLES.SUPERADMIN), updateUser);
 
 export default router;
