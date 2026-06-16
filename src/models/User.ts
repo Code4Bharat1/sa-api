@@ -51,7 +51,11 @@ const UserSchema = new Schema<IUser>(
     isActive: { type: Boolean, default: true },
     refreshTokenHash: { type: String },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
 export const User = mongoose.model<IUser>('User', UserSchema);
