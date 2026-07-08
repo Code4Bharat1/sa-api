@@ -11,8 +11,11 @@ export const startSLAChecker = () => {
       const result = await Ticket.updateMany(
         {
           status: { $nin: [TICKET_STATUS.CLOSED, TICKET_STATUS.RESOLVED] },
-          expectedResponseTime: { $lt: now },
           isOverdue: false,
+          $or: [
+            { expectedResponseTime: { $lt: now } },
+            { resolutionDeadline: { $lt: now } },
+          ],
         },
         { $set: { isOverdue: true } }
       );

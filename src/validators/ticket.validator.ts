@@ -6,11 +6,13 @@ export const createTicketSchema = z.object({
   issueCategory: z.enum(ISSUE_CATEGORIES),
   description: z.string().min(10).max(2000),
   priority: z.enum([PRIORITY.LOW, PRIORITY.MEDIUM, PRIORITY.HIGH, PRIORITY.CRITICAL]).optional(),
+  attachments: z.array(z.string()).optional(),
 });
 
 export const updateStatusSchema = z.object({
   status: z.enum(Object.values(TICKET_STATUS) as [string, ...string[]]),
   remarks: z.string().max(500).optional(),
+  scheduledVisitDate: z.string().optional(),
 });
 
 export const assignTicketSchema = z.object({
@@ -45,4 +47,14 @@ export const ticketFilterSchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
   search: z.string().optional(),
+});
+
+export const updatePrioritySchema = z.object({
+  priority: z.enum([PRIORITY.LOW, PRIORITY.MEDIUM, PRIORITY.HIGH, PRIORITY.CRITICAL]),
+});
+
+export const updateDeadlineSchema = z.object({
+  resolutionDeadline: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid deadline date format',
+  }),
 });

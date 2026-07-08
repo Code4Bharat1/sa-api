@@ -16,14 +16,14 @@ const SEED_USERS = [
     organizationName: 'Student Alliance',
   },
   // ── Super Admin ──────────────────────────────────────────────────────────
-  {
-    name: 'Shams Ali (Super)',
-    email: 'shamsali@gmail.com',
-    mobileNumber: '9000000002',
-    password: 'Shams@17',
-    role: 'superadmin' as const,
-    organizationName: 'Student Alliance',
-  },
+  // {
+  //   name: 'Shams Ali (Super)',
+  //   email: 'shamsali@gmail.com',
+  //   mobileNumber: '9000000002',
+  //   password: 'Shams@17',
+  //   role: 'admin' as const,
+  //   organizationName: 'Student Alliance',
+  // },
   // ── Technicians ──────────────────────────────────────────────────────────
   {
     name: 'Rahul Sharma',
@@ -109,7 +109,7 @@ async function seed() {
   console.log('│ Role         │ Email                                │ Password  │');
   console.log('├──────────────┼──────────────────────────────────────┼───────────┤');
   console.log('│ Admin        │ shams@gmail.com                      │ Shams@17  │');
-  console.log('│ Super Admin  │ shamsali@gmail.com                   │ Shams@17  │');
+  // console.log('│ Super Admin  │ shamsali@gmail.com                   │ Shams@17  │');
   console.log('│ Technician 1 │ rahul.tech@studentalliance.in        │ Tech@1234 │');
   console.log('│ Technician 2 │ amit.tech@studentalliance.in         │ Tech@1234 │');
   console.log('│ Technician 3 │ priya.tech@studentalliance.in        │ Tech@1234 │');

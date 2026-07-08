@@ -20,8 +20,11 @@ export const env = {
   MSG91_AUTH_KEY: process.env.MSG91_AUTH_KEY || '',
   MSG91_SENDER_ID: process.env.MSG91_SENDER_ID || 'IFPD',
 
-  WHATSAPP_TOKEN: process.env.WHATSAPP_TOKEN || '',
-  WHATSAPP_PHONE_ID: process.env.WHATSAPP_PHONE_ID || '',
+  // WhatsApp via Twilio (sandbox until Meta API is ready)
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || '',
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || '',
+  TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886',
+  TWILIO_CONTENT_SID: process.env.TWILIO_CONTENT_SID || '',
 
   SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),

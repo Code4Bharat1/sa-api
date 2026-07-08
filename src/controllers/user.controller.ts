@@ -77,12 +77,6 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     const user = await User.findById(req.params.id);
     if (!user) throw new AppError('User not found', 404);
 
-    if (req.user!.role === ROLES.ADMIN) {
-      if (user.role === ROLES.ADMIN || user.role === ROLES.SUPERADMIN) {
-        throw new AppError('Admins cannot modify Admin or Super Admin accounts', 403);
-      }
-    }
-
     const before = { isActive: user.isActive, role: user.role, name: user.name };
     if (isActive !== undefined) {
       if (req.user!.userId === user.id && isActive === false) {
@@ -91,9 +85,6 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
       user.isActive = isActive;
     }
     if (role) {
-      if (req.user!.role === ROLES.ADMIN && (role === ROLES.ADMIN || role === ROLES.SUPERADMIN)) {
-        throw new AppError('Admins cannot assign Admin or Super Admin roles', 403);
-      }
       user.role = role as Role;
     }
     if (name) user.name = name;

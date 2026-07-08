@@ -41,8 +41,10 @@ export interface ITicket extends Document {
   statusHistory: IStatusHistory[];
   assignedTeam?: string;
   assignedTechnician?: Types.ObjectId;
+  scheduledVisitDate?: Date;
   expectedResponseTime?: Date;
   expectedResolutionTime?: Date;
+  resolutionDeadline?: Date;
   assignedAt?: Date;
   resolution?: IResolution;
   closedAt?: Date;
@@ -93,8 +95,10 @@ const TicketSchema = new Schema<ITicket>(
     statusHistory: [StatusHistorySchema],
     assignedTeam: { type: String },
     assignedTechnician: { type: Schema.Types.ObjectId, ref: 'User' },
+    scheduledVisitDate: { type: Date },
     expectedResponseTime: { type: Date },
     expectedResolutionTime: { type: Date },
+    resolutionDeadline: { type: Date },
     assignedAt: { type: Date },
     resolution: ResolutionSchema,
     closedAt: { type: Date },

@@ -6,11 +6,11 @@ import { ROLES } from '../config/constants.js';
 
 const router = Router();
 
-router.use(authMiddleware, rbac(ROLES.ADMIN, ROLES.SUPERADMIN));
+router.use(authMiddleware, rbac(ROLES.ADMIN));
 
 router.get('/dashboard/kpis', kpis);
 router.get('/tickets', ticketReport);
 router.get('/technician-performance', technicianPerformance);
-router.get('/audit-logs', rbac(ROLES.SUPERADMIN), auditLogs);
+router.get('/audit-logs', rbac(ROLES.ADMIN), auditLogs);
 
 export default router;

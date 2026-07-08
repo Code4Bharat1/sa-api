@@ -30,7 +30,15 @@ export const getTechnicianPerformance = async () => {
       $group: {
         _id: '$assignedTechnician',
         totalAssigned: { $sum: 1 },
-        resolved: { $sum: { $cond: [{ $eq: ['$status', 'Closed'] }, 1, 0] } },
+        resolved: {
+          $sum: {
+            $cond: [
+              { $in: ['$status', ['Resolved', 'Closed', 'Customer Confirmation Pending']] },
+              1,
+              0
+            ]
+          }
+        },
         avgRating: { $avg: '$feedback.rating' },
       },
     },

@@ -8,10 +8,10 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/technicians', rbac(ROLES.ADMIN, ROLES.SUPERADMIN), listTechnicians);
-router.get('/', rbac(ROLES.ADMIN, ROLES.SUPERADMIN), listUsers);
-router.get('/:id', rbac(ROLES.ADMIN, ROLES.SUPERADMIN), getUser);
-router.post('/', rbac(ROLES.SUPERADMIN), createUser);
-router.patch('/:id', rbac(ROLES.ADMIN, ROLES.SUPERADMIN), updateUser);
+router.get('/technicians', rbac(ROLES.ADMIN), listTechnicians);
+router.get('/', rbac(ROLES.ADMIN), listUsers);
+router.get('/:id', rbac(ROLES.ADMIN), getUser);
+router.post('/', rbac(ROLES.ADMIN), createUser);
+router.patch('/:id', rbac(ROLES.ADMIN), updateUser);
 
 export default router;
