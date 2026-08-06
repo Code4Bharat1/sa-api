@@ -5,6 +5,10 @@ import { env } from './config/env.js';
 import { User } from './models/User.js';
 import { generateCustomerId } from './utils/counter.js';
 
+import * as dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+
 const SEED_USERS = [
   // ── Admin ────────────────────────────────────────────────────────────────
   {

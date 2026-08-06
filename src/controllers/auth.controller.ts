@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { generateCustomerId } from '../utils/counter.js';
@@ -9,6 +10,8 @@ import { AppError } from '../middlewares/error.middleware.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { env } from '../config/env.js';
 import { Types } from 'mongoose';
+
+const googleClient = new OAuth2Client();
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -102,7 +105,7 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
       success: true,
       data: {
         accessToken,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, customerId: user.customerId },
+        user: { id: user.id, name: user.name, email: user.email, role: user.role, customerId: user.customerId, profileComplete: user.profileComplete },
       },
     });
   } catch (err) {
@@ -134,7 +137,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       success: true,
       data: {
         accessToken,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, customerId: user.customerId },
+        user: { id: user.id, name: user.name, email: user.email, role: user.role, customerId: user.customerId, profileComplete: user.profileComplete },
       },
     });
   } catch (err) {
@@ -184,6 +187,117 @@ export const getMe = async (req: AuthRequest, res: Response, next: NextFunction)
     const user = await User.findById(req.user!.userId).select('-passwordHash -refreshTokenHash');
     if (!user) throw new AppError('User not found', 404);
     res.json({ success: true, data: user });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) throw new AppError('Google ID token is required', 400);
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: env.GOOGLE_CLIENT_ID || undefined,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) throw new AppError('Invalid Google token payload', 400);
+
+    const { email, name, sub: googleId } = payload;
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    if (user) {
+      if (!user.googleId) {
+        user.googleId = googleId;
+      }
+      if (!user.isActive) throw new AppError('Account is inactive', 403);
+    } else {
+      const customerId = await generateCustomerId();
+      user = new User({
+        customerId,
+        name: name || 'Google User',
+        email: email.toLowerCase(),
+        googleId,
+        role: 'customer',
+        profileComplete: false,
+        panels: [],
+      });
+    }
+
+    const tokenPayload = { userId: user.id, role: user.role, email: user.email };
+    const accessToken = signAccessToken(tokenPayload);
+    const refreshTokenToken = signRefreshToken(tokenPayload);
+    const refreshHash = await bcrypt.hash(refreshTokenToken, 10);
+    user.refreshTokenHash = refreshHash;
+    await user.save();
+
+    res.cookie('refreshToken', refreshTokenToken, COOKIE_OPTS);
+    res.json({
+      success: true,
+      data: {
+        accessToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          customerId: user.customerId,
+          mobileNumber: user.mobileNumber,
+          profileComplete: user.profileComplete,
+        },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const completeProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    const { password, mobileNumber, organizationName, address, city, state, panels } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) throw new AppError('User not found', 404);
+
+    if (password) {
+      if (password.length < 8) throw new AppError('Password must be at least 8 characters long', 400);
+      user.passwordHash = await bcrypt.hash(password, 12);
+    } else if (!user.passwordHash) {
+      throw new AppError('Password is required to complete your profile', 400);
+    }
+
+    if (mobileNumber) {
+      const existingMobile = await User.findOne({ mobileNumber, _id: { $ne: userId } });
+      if (existingMobile) throw new AppError('Mobile number already registered by another account', 409);
+      user.mobileNumber = mobileNumber;
+    }
+
+    if (organizationName !== undefined) user.organizationName = organizationName;
+    if (address !== undefined) user.address = address;
+    if (city !== undefined) user.city = city;
+    if (state !== undefined) user.state = state;
+    if (panels && Array.isArray(panels)) {
+      user.panels = panels.map((p: { serialNumber: string; size: string; installationDate: string }) => ({
+        ...p,
+        installationDate: new Date(p.installationDate),
+      }));
+    }
+
+    user.profileComplete = true;
+    await user.save();
+
+    const sanitizedUser = await User.findById(userId).select('-passwordHash -refreshTokenHash');
+
+    res.json({
+      success: true,
+      message: 'Profile completed successfully',
+      data: sanitizedUser,
+    });
   } catch (err) {
     next(err);
   }

@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IOTP extends Document {
   identifier: string;
-  codeHash: string;
+  code: string;
   expiresAt: Date;
   attempts: number;
   verified: boolean;
@@ -10,7 +10,7 @@ export interface IOTP extends Document {
 
 const OTPSchema = new Schema<IOTP>({
   identifier: { type: String, required: true, index: true },
-  codeHash: { type: String, required: true },
+  code: { type: String, required: true },
   expiresAt: { type: Date, required: true },
   attempts: { type: Number, default: 0 },
   verified: { type: Boolean, default: false },

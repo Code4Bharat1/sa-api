@@ -15,6 +15,7 @@ export const env = {
   OTP_EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES || '5', 10),
 
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
 
   SMS_PROVIDER: process.env.SMS_PROVIDER || 'msg91',
   MSG91_AUTH_KEY: process.env.MSG91_AUTH_KEY || '',

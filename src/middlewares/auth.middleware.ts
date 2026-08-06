@@ -12,10 +12,13 @@ export interface AuthRequest extends Request {
 
 export const authMiddleware = (req: AuthRequest, _res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  const token = authHeader?.startsWith('Bearer ')
+    ? authHeader.split(' ')[1]
+    : (req.query?.token as string | undefined);
+
+  if (!token) {
     return next(new AppError('No token provided', 401));
   }
-  const token = authHeader.split(' ')[1];
   try {
     req.user = verifyAccessToken(token);
     next();

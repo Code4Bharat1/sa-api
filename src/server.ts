@@ -5,6 +5,10 @@ import { logger } from './utils/logger.js';
 import { startSLAChecker } from './jobs/sla.job.js';
 import { startAutoCloseJob } from './jobs/autoClose.job.js';
 
+import * as dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
+dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
+
 const bootstrap = async () => {
   await connectDB();
 

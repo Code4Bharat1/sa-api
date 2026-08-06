@@ -10,9 +10,11 @@ export interface IPanel {
 export interface IUser extends Document {
   customerId: string;
   name: string;
-  mobileNumber: string;
+  mobileNumber?: string;
   email: string;
   passwordHash?: string;
+  googleId?: string;
+  profileComplete: boolean;
   organizationName?: string;
   address?: string;
   city?: string;
@@ -35,9 +37,11 @@ const UserSchema = new Schema<IUser>(
   {
     customerId: { type: String, unique: true },
     name: { type: String, required: true, trim: true },
-    mobileNumber: { type: String, required: true, unique: true, index: true },
+    mobileNumber: { type: String, unique: true, sparse: true, index: true },
     email: { type: String, required: true, unique: true, index: true, lowercase: true },
     passwordHash: { type: String },
+    googleId: { type: String, unique: true, sparse: true },
+    profileComplete: { type: Boolean, default: true },
     organizationName: { type: String, trim: true },
     address: { type: String, trim: true },
     city: { type: String, trim: true },

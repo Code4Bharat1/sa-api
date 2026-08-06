@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, requestOTP, verifyOTP, login, refreshToken, logout, getMe } from '../controllers/auth.controller.js';
+import { register, requestOTP, verifyOTP, login, refreshToken, logout, getMe, googleLogin, completeProfile } from '../controllers/auth.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { authRateLimiter, otpRateLimiter } from '../middlewares/rateLimiter.js';
@@ -11,6 +11,8 @@ router.post('/register', authRateLimiter, validate(registerSchema), register);
 router.post('/otp/request', otpRateLimiter, validate(otpRequestSchema), requestOTP);
 router.post('/otp/verify', authRateLimiter, validate(otpVerifySchema), verifyOTP);
 router.post('/login', authRateLimiter, validate(loginSchema), login);
+router.post('/google', authRateLimiter, googleLogin);
+router.post('/complete-profile', authMiddleware, completeProfile);
 router.post('/refresh', refreshToken);
 router.post('/logout', authMiddleware, logout);
 router.get('/me', authMiddleware, getMe);
