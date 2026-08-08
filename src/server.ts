@@ -1,9 +1,11 @@
+import { createServer } from 'http';
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { startSLAChecker } from './jobs/sla.job.js';
 import { startAutoCloseJob } from './jobs/autoClose.job.js';
+import { initSocket } from './socket.js';
 
 import * as dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
@@ -15,8 +17,11 @@ const bootstrap = async () => {
   startSLAChecker();
   startAutoCloseJob();
 
-  app.listen(env.PORT, () => {
-    logger.info(`Server running on port ${env.PORT} [${env.NODE_ENV}]`);
+  const httpServer = createServer(app);
+  initSocket(httpServer);
+
+  httpServer.listen(env.PORT, () => {
+    logger.info(`Server running on port ${env.PORT} [${env.NODE_ENV}] with Socket.IO enabled`);
   });
 };
 

@@ -3,7 +3,7 @@ import { register, requestOTP, verifyOTP, login, refreshToken, logout, getMe, go
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { authRateLimiter, otpRateLimiter } from '../middlewares/rateLimiter.js';
-import { registerSchema, loginSchema, otpRequestSchema, otpVerifySchema } from '../validators/auth.validator.js';
+import { registerSchema, loginSchema, otpRequestSchema, otpVerifySchema, completeProfileSchema } from '../validators/auth.validator.js';
 
 const router = Router();
 
@@ -12,7 +12,7 @@ router.post('/otp/request', otpRateLimiter, validate(otpRequestSchema), requestO
 router.post('/otp/verify', authRateLimiter, validate(otpVerifySchema), verifyOTP);
 router.post('/login', authRateLimiter, validate(loginSchema), login);
 router.post('/google', authRateLimiter, googleLogin);
-router.post('/complete-profile', authMiddleware, completeProfile);
+router.post('/complete-profile', authMiddleware, validate(completeProfileSchema), completeProfile);
 router.post('/refresh', refreshToken);
 router.post('/logout', authMiddleware, logout);
 router.get('/me', authMiddleware, getMe);

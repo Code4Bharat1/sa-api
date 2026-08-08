@@ -14,6 +14,7 @@ import ticketRoutes from './routes/ticket.routes.js';
 import userRoutes from './routes/user.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import sseRoutes from './routes/sse.routes.js';
+import messageRoutes from './routes/message.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,6 +32,11 @@ app.use(
     credentials: true,
   })
 );
+morgan.token('url', (req: express.Request) => {
+  const url = req.originalUrl || req.url || '';
+  return url.replace(/([?&]token=)[^&]+/, '$1***REDACTED***');
+});
+
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -49,6 +55,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', reportRoutes);
 app.use('/api/sse', sseRoutes);
+app.use('/api/messages', messageRoutes);
 
 app.use(errorMiddleware);
 

@@ -6,7 +6,7 @@ export const createTicketSchema = z.object({
   issueCategory: z.enum(ISSUE_CATEGORIES),
   description: z.string().min(10).max(2000),
   priority: z.enum([PRIORITY.LOW, PRIORITY.MEDIUM, PRIORITY.HIGH, PRIORITY.CRITICAL]).optional(),
-  attachments: z.array(z.string()).optional(),
+  attachments: z.array(z.string()).min(1, 'At least one attachment or voice note is required'),
 });
 
 export const updateStatusSchema = z.object({

@@ -281,12 +281,13 @@ export const completeProfile = async (req: AuthRequest, res: Response, next: Nex
     if (address !== undefined) user.address = address;
     if (city !== undefined) user.city = city;
     if (state !== undefined) user.state = state;
-    if (panels && Array.isArray(panels)) {
-      user.panels = panels.map((p: { serialNumber: string; size: string; installationDate: string }) => ({
-        ...p,
-        installationDate: new Date(p.installationDate),
-      }));
+    if (!panels || !Array.isArray(panels) || panels.length === 0) {
+      throw new AppError('At least one IFPD panel is required', 400);
     }
+    user.panels = panels.map((p: { serialNumber: string; size: string; installationDate: string }) => ({
+      ...p,
+      installationDate: new Date(p.installationDate),
+    }));
 
     user.profileComplete = true;
     await user.save();
