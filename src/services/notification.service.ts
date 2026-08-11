@@ -46,9 +46,9 @@ const sendWithRetry = async (
   }
 };
 
-const sendEmail = async (to: string, subject: string, html: string): Promise<void> => {
+export const sendEmail = async (to: string, subject: string, html: string, attachments?: any[]): Promise<void> => {
   const fromAddress = env.EMAIL_FROM || 'harshd2911@gmail.com';
-  await transporter.sendMail({ from: fromAddress, to, subject, html });
+  await transporter.sendMail({ from: fromAddress, to, subject, html, attachments });
 };
 
 const formatWhatsAppMobile = (mobile: string): string => {

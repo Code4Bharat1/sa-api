@@ -15,6 +15,7 @@ import userRoutes from './routes/user.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import sseRoutes from './routes/sse.routes.js';
 import messageRoutes from './routes/message.routes.js';
+import acknowledgmentRoutes from './routes/acknowledgment.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +57,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', reportRoutes);
 app.use('/api/sse', sseRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/acknowledgments', acknowledgmentRoutes);
 
 app.use(errorMiddleware);
 
