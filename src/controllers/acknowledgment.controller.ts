@@ -19,10 +19,10 @@ const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const createAcknowledgment = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { clientName, institutionName, trainersPresentCount, traineeNames, clientEmail, signatureImage } = req.body;
+    const { clientName, institutionName, trainersPresentCount, traineeNames, clientEmail, signatureImage, trainingImage } = req.body;
 
-    if (!clientName || !institutionName || !trainersPresentCount || !traineeNames || !clientEmail || !signatureImage) {
-      throw new AppError('All fields including digital signature are required', 400);
+    if (!clientName || !institutionName || !trainersPresentCount || !traineeNames || !clientEmail || !signatureImage || !trainingImage) {
+      throw new AppError('All fields including training photo and digital signature are required', 400);
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -41,6 +41,7 @@ export const createAcknowledgment = async (req: AuthRequest, res: Response, next
       traineeNames: traineeNames.trim(),
       clientEmail: clientEmail.trim(),
       signatureImage,
+      trainingImage,
     });
 
     const safeClientName = escapeHtml(clientName.trim());
@@ -64,9 +65,9 @@ export const createAcknowledgment = async (req: AuthRequest, res: Response, next
           .field-group { margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
           .label { font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
           .value { font-size: 15px; font-weight: 500; color: #0f172a; }
-          .signature-box { margin-top: 24px; padding: 16px; background: #0f172a; border: 1px dashed #334155; border-radius: 8px; text-align: center; }
-          .signature-box .label { color: #94a3b8; }
-          .signature-box img { max-width: 280px; max-height: 120px; height: auto; }
+          .media-box { margin-top: 20px; padding: 16px; background: #0f172a; border: 1px dashed #334155; border-radius: 8px; text-align: center; }
+          .media-box .label { color: #94a3b8; }
+          .media-box img { max-width: 280px; max-height: 180px; height: auto; border-radius: 6px; }
           .footer { background: #0D1A4B; color: #C99F0F; padding: 16px; text-align: center; font-size: 12px; }
         </style>
       </head>
@@ -101,7 +102,12 @@ export const createAcknowledgment = async (req: AuthRequest, res: Response, next
               <div class="value">${safeTechName}</div>
             </div>
 
-            <div class="signature-box">
+            <div class="media-box">
+              <div class="label">Captured Training Session Photo</div>
+              <img src="cid:training_session_photo" alt="Training Session Photo" style="max-width: 320px; max-height: 200px;" />
+            </div>
+
+            <div class="media-box" style="margin-top: 16px;">
               <div class="label">Captured Digital Signature</div>
               <img src="cid:client_digital_signature" alt="Digital Signature" style="max-width: 280px; max-height: 120px;" />
             </div>
@@ -114,13 +120,21 @@ export const createAcknowledgment = async (req: AuthRequest, res: Response, next
       </html>
     `;
 
-    const base64Data = signatureImage.replace(/^data:image\/\w+;base64,/, '');
-    const signatureBuffer = Buffer.from(base64Data, 'base64');
+    const signatureBase64 = signatureImage.replace(/^data:image\/\w+;base64,/, '');
+    const signatureBuffer = Buffer.from(signatureBase64, 'base64');
+    const photoBase64 = trainingImage.replace(/^data:image\/\w+;base64,/, '');
+    const photoBuffer = Buffer.from(photoBase64, 'base64');
+
     const attachments = [
       {
         filename: 'digital-signature.png',
         content: signatureBuffer,
         cid: 'client_digital_signature',
+      },
+      {
+        filename: 'training-session-photo.png',
+        content: photoBuffer,
+        cid: 'training_session_photo',
       },
     ];
 

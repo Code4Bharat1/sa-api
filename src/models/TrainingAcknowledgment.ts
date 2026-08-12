@@ -8,6 +8,7 @@ export interface ITrainingAcknowledgment extends Document {
   traineeNames: string;
   clientEmail: string;
   signatureImage: string;
+  trainingImage: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +22,7 @@ const TrainingAcknowledgmentSchema = new Schema<ITrainingAcknowledgment>(
     traineeNames: { type: String, required: true, trim: true },
     clientEmail: { type: String, required: true, trim: true, lowercase: true, index: true },
     signatureImage: { type: String, required: true },
+    trainingImage: { type: String, required: true },
   },
   { timestamps: true }
 );

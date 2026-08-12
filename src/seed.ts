@@ -12,10 +12,10 @@ dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 const SEED_USERS = [
   // ── Admin ────────────────────────────────────────────────────────────────
   {
-    name: 'Shams Ali',
-    email: 'shams@gmail.com',
-    mobileNumber: '9000000001',
-    password: 'Shams@17',
+    name: 'Ayaan Raje',
+    email: 'ayaanraje25@gmail.com',
+    mobileNumber: '9000000011',
+    password: 'Raje@321',
     role: 'admin' as const,
     organizationName: 'Student Alliance',
   },
@@ -112,7 +112,7 @@ async function seed() {
   console.log('├──────────────┬──────────────────────────────────────┬───────────┤');
   console.log('│ Role         │ Email                                │ Password  │');
   console.log('├──────────────┼──────────────────────────────────────┼───────────┤');
-  console.log('│ Admin        │ shams@gmail.com                      │ Shams@17  │');
+  console.log('│ Admin        │ ayaanraje25@gmail.com                | Raje@321  │');
   // console.log('│ Super Admin  │ shamsali@gmail.com                   │ Shams@17  │');
   console.log('│ Technician 1 │ rahul.tech@studentalliance.in        │ Tech@1234 │');
   console.log('│ Technician 2 │ amit.tech@studentalliance.in         │ Tech@1234 │');
