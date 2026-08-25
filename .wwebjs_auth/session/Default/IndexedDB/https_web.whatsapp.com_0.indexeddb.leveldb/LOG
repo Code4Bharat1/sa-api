@@ -1,0 +1,12 @@
+2026/08/25-18:22:41.041 2ec4 Reusing MANIFEST E:\nexcore\sa\sa-api\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/08/25-18:22:41.042 2ec4 Recovering log #668
+2026/08/25-18:22:41.112 2ec4 Reusing old log E:\nexcore\sa\sa-api\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000668.log 
+2026/08/25-18:22:46.898 2ec4 Level-0 table #689: started
+2026/08/25-18:22:46.918 2ec4 Level-0 table #689: 1051393 bytes OK
+2026/08/25-18:22:46.919 2ec4 Delete type=0 #668
+2026/08/25-18:22:55.319 4a48 Compacting 1@0 + 0@1 files
+2026/08/25-18:22:55.348 4a48 Generated table #690@0: 23411 keys, 311033 bytes
+2026/08/25-18:22:55.355 4a48 Generated table #691@0: 11082 keys, 292388 bytes
+2026/08/25-18:22:55.355 4a48 Compacted 1@0 + 0@1 files => 603421 bytes
+2026/08/25-18:22:55.355 4a48 compacted to: files[ 0 2 17 0 0 0 0 ]
+2026/08/25-18:22:55.356 4a48 Delete type=2 #689

@@ -6,6 +6,7 @@ import { logger } from './utils/logger.js';
 import { startSLAChecker } from './jobs/sla.job.js';
 import { startAutoCloseJob } from './jobs/autoClose.job.js';
 import { initSocket } from './socket.js';
+import { initializeWhatsApp } from './services/whatsapp.service.js';
 
 import * as dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
@@ -16,6 +17,7 @@ const bootstrap = async () => {
 
   startSLAChecker();
   startAutoCloseJob();
+  initializeWhatsApp();
 
   const httpServer = createServer(app);
   initSocket(httpServer);
