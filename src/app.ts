@@ -18,10 +18,15 @@ import messageRoutes from './routes/message.routes.js';
 import acknowledgmentRoutes from './routes/acknowledgment.routes.js';
 import deliveryRoutes from './routes/delivery.routes.js';
 
+import fs from 'fs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Trust reverse proxy (Nginx, Cloudflare, Load Balancer) to properly detect https:// and client IP
+app.set('trust proxy', 1);
 
 app.use(
   helmet({
@@ -45,7 +50,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(apiRateLimiter);
 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Robust static uploads directory resolution
+const uploadsPath = path.resolve(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsPath));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

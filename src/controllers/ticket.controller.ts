@@ -20,8 +20,14 @@ export const create = async (req: AuthRequest, res: Response, next: NextFunction
     const body = { ...req.body };
     if (req.user!.role === ROLES.CUSTOMER) {
       delete body.priority;
+      delete body.customerId;
+      delete body.customCustomerName;
+      delete body.customOrganizationName;
+      delete body.customCustomerEmail;
+      delete body.customCustomerMobile;
+      delete body.assignedTechnician;
     }
-    const ticket = await createTicket(req.user!.userId, body);
+    const ticket = await createTicket(req.user!.userId, req.user!.role, body);
     res.status(201).json({ success: true, data: ticket });
   } catch (err) {
     next(err);
@@ -77,7 +83,14 @@ export const getOne = async (req: AuthRequest, res: Response, next: NextFunction
 export const updateStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status, remarks, scheduledVisitDate } = req.body;
-    const ticket = await updateTicketStatus(req.params.ticketId, status, req.user!.userId, remarks, scheduledVisitDate);
+    const ticket = await updateTicketStatus(
+      req.params.ticketId,
+      status,
+      req.user!.userId,
+      remarks,
+      scheduledVisitDate,
+      req.user!.role
+    );
     res.json({ success: true, data: ticket });
   } catch (err) {
     next(err);

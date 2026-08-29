@@ -14,8 +14,8 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.post('/', rbac(ROLES.TECHNICIAN, ROLES.ADMIN), validate(createAcknowledgmentSchema), createAcknowledgment);
-router.get('/', rbac(ROLES.TECHNICIAN, ROLES.ADMIN), listAcknowledgments);
-router.get('/:id', rbac(ROLES.TECHNICIAN, ROLES.ADMIN), getAcknowledgment);
+router.post('/', rbac(ROLES.ADMIN), validate(createAcknowledgmentSchema), createAcknowledgment);
+router.get('/', rbac(ROLES.ADMIN), listAcknowledgments);
+router.get('/:id', rbac(ROLES.ADMIN), getAcknowledgment);
 
 export default router;

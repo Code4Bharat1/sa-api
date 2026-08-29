@@ -69,6 +69,14 @@ const SEED_USERS = [
     role: 'technician' as const,
     organizationName: 'Student Alliance',
   },
+  {
+    name: 'Ayaan Raje',
+    email: 'rajeayaan2525@gmail.com',
+    mobileNumber: '9100000006',
+    password: 'Tech@1234',
+    role: 'technician' as const,
+    organizationName: 'Student Alliance',
+  }
 ];
 
 async function seed() {
@@ -76,18 +84,27 @@ async function seed() {
   console.log('✔ Connected to MongoDB');
 
   let created = 0;
-  let skipped = 0;
+  let updated = 0;
 
   for (const u of SEED_USERS) {
+    const passwordHash = await bcrypt.hash(u.password, 12);
     const exists = await User.findOne({ email: u.email });
+
     if (exists) {
-      console.log(`  skip  ${u.role.padEnd(11)} ${u.email}  (already exists)`);
-      skipped++;
+      exists.passwordHash = passwordHash;
+      exists.role = u.role;
+      exists.name = u.name;
+      exists.mobileNumber = u.mobileNumber;
+      exists.organizationName = u.organizationName;
+      exists.isActive = true;
+      await exists.save();
+
+      console.log(`  ✔ updated ${u.role.padEnd(11)} ${u.email}   password: ${u.password}`);
+      updated++;
       continue;
     }
 
     const customerId = await generateCustomerId();
-    const passwordHash = await bcrypt.hash(u.password, 12);
 
     await User.create({
       customerId,
@@ -101,11 +118,11 @@ async function seed() {
       panels: [],
     });
 
-    console.log(`  ✔     ${u.role.padEnd(11)} ${u.email}   password: ${u.password}`);
+    console.log(`  ✔ created ${u.role.padEnd(11)} ${u.email}   password: ${u.password}`);
     created++;
   }
 
-  console.log(`\nDone — ${created} created, ${skipped} skipped.\n`);
+  console.log(`\nDone — ${created} created, ${updated} updated.\n`);
 
   console.log('┌─────────────────────────────────────────────────────────────────┐');
   console.log('│                     LOGIN CREDENTIALS                           │');
@@ -119,6 +136,7 @@ async function seed() {
   console.log('│ Technician 3 │ priya.tech@studentalliance.in        │ Tech@1234 │');
   console.log('│ Technician 4 │ vikram.tech@studentalliance.in       │ Tech@1234 │');
   console.log('│ Technician 5 │ deepak.tech@studentalliance.in       │ Tech@1234 │');
+  console.log('│ Technician 6 │ rajeayaan2525@gmail.com             │ Tech@1234 │');
   console.log('└──────────────┴──────────────────────────────────────┴───────────┘');
 
   await mongoose.disconnect();

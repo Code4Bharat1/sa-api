@@ -2,8 +2,8 @@ import { Types } from 'mongoose';
 import { Ticket, ITicket } from '../models/Ticket.js';
 import { User } from '../models/User.js';
 import { AuditLog } from '../models/AuditLog.js';
-import { TICKET_STATUS, VALID_TRANSITIONS, TicketStatus } from '../config/constants.js';
-import { generateTicketId } from '../utils/counter.js';
+import { TICKET_STATUS, VALID_TRANSITIONS, TicketStatus, ROLES } from '../config/constants.js';
+import { generateTicketId, generateCustomerId } from '../utils/counter.js';
 import { computeExpectedTimes } from './sla.service.js';
 import { notifyUser } from './notification.service.js';
 import { sseManager } from '../sse/sseManager.js';
@@ -12,53 +12,141 @@ import { workflowEngine } from './workflow.service.js';
 import { logger } from '../utils/logger.js';
 
 export const createTicket = async (
-  customerId: string,
+  actorId: string,
+  actorRole: string,
   data: {
     panelSerialNumber: string;
     issueCategory: ITicket['issueCategory'];
     description: string;
     priority?: ITicket['priority'];
     attachments?: string[];
+    customerId?: string;
+    customCustomerName?: string;
+    customOrganizationName?: string;
+    customCustomerEmail?: string;
+    customCustomerMobile?: string;
+    assignedTechnician?: string;
   }
 ) => {
+  let targetCustomerId = actorId;
+
+  if (actorRole === ROLES.ADMIN) {
+    if (data.customerId) {
+      targetCustomerId = data.customerId;
+    } else if (data.customCustomerName && data.customCustomerName.trim()) {
+      // Find or create customer
+      let existingCustomer = null;
+      if (data.customCustomerEmail && data.customCustomerEmail.trim()) {
+        existingCustomer = await User.findOne({
+          email: data.customCustomerEmail.trim().toLowerCase(),
+        });
+      }
+      if (!existingCustomer && data.customCustomerMobile && data.customCustomerMobile.trim()) {
+        existingCustomer = await User.findOne({
+          mobileNumber: data.customCustomerMobile.trim(),
+        });
+      }
+
+      if (existingCustomer) {
+        targetCustomerId = existingCustomer._id.toString();
+        if (!existingCustomer.organizationName && data.customOrganizationName) {
+          existingCustomer.organizationName = data.customOrganizationName.trim();
+          await existingCustomer.save();
+        }
+      } else {
+        const newCustomerId = await generateCustomerId();
+        const fallbackEmail = data.customCustomerEmail?.trim().toLowerCase()
+          || `cust_${Date.now()}@studentalliancellp.com`;
+
+        const createdCustomer = await User.create({
+          customerId: newCustomerId,
+          name: data.customCustomerName.trim(),
+          organizationName: data.customOrganizationName?.trim() || 'Direct Client',
+          email: fallbackEmail,
+          mobileNumber: data.customCustomerMobile?.trim() || undefined,
+          role: ROLES.CUSTOMER,
+          profileComplete: true,
+          isActive: true,
+          panels: data.panelSerialNumber ? [
+            {
+              serialNumber: data.panelSerialNumber.trim(),
+              size: 'Standard',
+              installationDate: new Date(),
+            }
+          ] : [],
+        });
+        targetCustomerId = createdCustomer._id.toString();
+      }
+    }
+  }
+
   const ticketId = await generateTicketId();
   const { expectedResponseTime, expectedResolutionTime } = computeExpectedTimes(data.issueCategory);
 
-  const ticket = await Ticket.create({
+  const initialStatus = data.assignedTechnician ? TICKET_STATUS.ASSIGNED : TICKET_STATUS.OPEN;
+  const initialRemarks = data.assignedTechnician
+    ? 'Ticket created and assigned to technician'
+    : 'Ticket created';
+
+  const ticketDocData: any = {
     ticketId,
-    customerId: new Types.ObjectId(customerId),
+    customerId: new Types.ObjectId(targetCustomerId),
     panelSerialNumber: data.panelSerialNumber,
     issueCategory: data.issueCategory,
     description: data.description,
     priority: data.priority || 'medium',
     attachments: data.attachments || [],
-    status: TICKET_STATUS.OPEN,
+    status: initialStatus,
     statusHistory: [
       {
-        status: TICKET_STATUS.OPEN,
-        changedBy: new Types.ObjectId(customerId),
+        status: initialStatus,
+        changedBy: new Types.ObjectId(actorId),
         timestamp: new Date(),
-        remarks: 'Ticket created',
+        remarks: initialRemarks,
       },
     ],
     expectedResponseTime,
     expectedResolutionTime,
-  });
+  };
 
-  const customer = await User.findById(customerId);
-  if (customer) {
+  if (data.assignedTechnician) {
+    ticketDocData.assignedTechnician = new Types.ObjectId(data.assignedTechnician);
+    ticketDocData.assignedAt = new Date();
+  }
+
+  const ticket = await Ticket.create(ticketDocData);
+
+  const customer = await User.findById(targetCustomerId);
+  if (customer && customer.email) {
     await notifyUser({
       recipientId: customer._id as Types.ObjectId,
       recipientEmail: customer.email,
       recipientMobile: customer.mobileNumber,
-      subject: `Ticket ${ticketId} Created`,
-      message: `Your support ticket ${ticketId} has been created. The expected response time is: ${expectedResponseTime.toLocaleString()}.`,
+      subject: `Support Ticket ${ticketId} Created`,
+      message: `Dear ${customer.name},\n\nYour support ticket ${ticketId} has been successfully registered.\n\nIssue Category: ${data.issueCategory}\nPriority: ${(data.priority || 'medium').toUpperCase()}\nPanel Serial: ${data.panelSerialNumber}\nDescription: ${data.description}\nExpected Response Time: ${expectedResponseTime.toLocaleString()}.\n\nOur team is working on resolving your issue as quickly as possible.`,
       ticketId: ticket._id as Types.ObjectId,
     });
   }
 
+  if (data.assignedTechnician) {
+    const techUser = await User.findById(data.assignedTechnician);
+    if (techUser && techUser.email) {
+      await notifyUser({
+        recipientId: techUser._id as Types.ObjectId,
+        recipientEmail: techUser.email,
+        recipientMobile: techUser.mobileNumber,
+        subject: `New Ticket Assigned: ${ticketId}`,
+        message: `Hello ${techUser.name},\n\nYou have been assigned to Ticket ${ticketId}.\n\nCustomer: ${customer?.name || 'Customer'}\nOrganization: ${customer?.organizationName || 'N/A'}\nCategory: ${data.issueCategory}\nPriority: ${(data.priority || 'medium').toUpperCase()}\nPanel Serial: ${data.panelSerialNumber}\nDescription: ${data.description}.`,
+        ticketId: ticket._id as Types.ObjectId,
+      });
+    }
+  }
+
   sseManager.sendToRole('admin', 'ticket:new', { ticketId: ticket.ticketId });
-  
+  if (data.assignedTechnician) {
+    sseManager.sendToUser(data.assignedTechnician, 'ticket:assigned', { ticketId: ticket.ticketId });
+  }
+
   // Trigger future-ready workflows
   workflowEngine.emit('ticket:created', ticket).catch((err) => {
     logger.error('WorkflowEngine: ticket:created trigger failed', err);
@@ -72,14 +160,21 @@ export const updateTicketStatus = async (
   newStatus: TicketStatus,
   actorId: string,
   remarks?: string,
-  scheduledVisitDate?: string
+  scheduledVisitDate?: string,
+  actorRole?: string
 ) => {
   const ticket = await Ticket.findOne({ ticketId });
   if (!ticket) throw new AppError('Ticket not found', 404);
 
-  const allowed = VALID_TRANSITIONS[ticket.status as TicketStatus];
-  if (!allowed?.includes(newStatus)) {
-    throw new AppError(`Invalid transition from ${ticket.status} to ${newStatus}`, 422);
+  const isAdminClosing = (actorRole === ROLES.ADMIN) && (newStatus === TICKET_STATUS.CLOSED);
+
+  if (!isAdminClosing) {
+    const allowed = VALID_TRANSITIONS[ticket.status as TicketStatus];
+    if (!allowed?.includes(newStatus)) {
+      throw new AppError(`Invalid transition from ${ticket.status} to ${newStatus}`, 422);
+    }
+  } else if (ticket.status === TICKET_STATUS.CLOSED) {
+    throw new AppError('Ticket is already closed', 422);
   }
 
   // Enrich the statusHistory remark with visit date when scheduling a visit
@@ -92,6 +187,8 @@ export const updateTicketStatus = async (
     historyRemarks = remarks
       ? `${remarks} · Visit scheduled on ${formattedVisitDate}`
       : `Visit scheduled on ${formattedVisitDate}`;
+  } else if (isAdminClosing && !remarks) {
+    historyRemarks = 'Closed by administrator';
   }
 
   const before = { status: ticket.status };
@@ -222,10 +319,12 @@ export const getTickets = async (filters: Record<string, string>, userRole: stri
             if: {
               $and: [
                 { $in: ['$status', ['Open', 'Under Review']] },
-                { $or: [
-                  { $eq: ['$assignedTechnician', null] },
-                  { $not: ['$assignedTechnician'] }
-                ]}
+                {
+                  $or: [
+                    { $eq: ['$assignedTechnician', null] },
+                    { $not: ['$assignedTechnician'] }
+                  ]
+                }
               ]
             },
             then: 0,

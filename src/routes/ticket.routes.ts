@@ -23,14 +23,15 @@ router.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded' });
   }
-  const host = req.get('host');
-  const protocol = req.protocol;
-  const url = `${protocol}://${host}/uploads/${req.file.filename}`;
-  res.json({ success: true, url });
+  const forwardedProto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+  const forwardedHost = (req.headers['x-forwarded-host'] as string) || req.get('host');
+  const baseUrl = process.env.API_URL || process.env.APP_URL || `${forwardedProto}://${forwardedHost}`;
+  const url = `${baseUrl}/uploads/${req.file.filename}`;
+  res.json({ success: true, url, filename: req.file.filename });
 });
 
 router.get('/', validate(ticketFilterSchema, 'query'), list);
-router.post('/', rbac(ROLES.CUSTOMER), validate(createTicketSchema), create);
+router.post('/', rbac(ROLES.CUSTOMER, ROLES.ADMIN), validate(createTicketSchema), create);
 router.get('/:ticketId', getOne);
 router.patch('/:ticketId/status', rbac(ROLES.ADMIN, ROLES.TECHNICIAN), validate(updateStatusSchema), updateStatus);
 router.patch('/:ticketId/assign', rbac(ROLES.ADMIN), validate(assignTicketSchema), assign);

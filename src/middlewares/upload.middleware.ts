@@ -7,8 +7,8 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE_MB } from '../config/constants.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Store uploads in a folder outside src, in project root
-const uploadDir = path.join(__dirname, '../../uploads');
+// Store uploads in a folder in project root
+const uploadDir = path.resolve(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

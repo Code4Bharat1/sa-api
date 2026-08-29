@@ -2,11 +2,17 @@ import { z } from 'zod';
 import { ISSUE_CATEGORIES, PRIORITY, TICKET_STATUS } from '../config/constants.js';
 
 export const createTicketSchema = z.object({
-  panelSerialNumber: z.string().min(1),
+  panelSerialNumber: z.string().min(1, 'Panel serial number is required'),
   issueCategory: z.enum(ISSUE_CATEGORIES),
-  description: z.string().min(10).max(2000),
+  description: z.string().min(5, 'At least 5 characters').max(2000),
   priority: z.enum([PRIORITY.LOW, PRIORITY.MEDIUM, PRIORITY.HIGH, PRIORITY.CRITICAL]).optional(),
-  attachments: z.array(z.string()).min(1, 'At least one attachment or voice note is required'),
+  attachments: z.array(z.string()).min(1, 'Photo attachment is required'),
+  customerId: z.string().optional(),
+  customCustomerName: z.string().optional(),
+  customOrganizationName: z.string().optional(),
+  customCustomerEmail: z.string().email().optional().or(z.literal('')),
+  customCustomerMobile: z.string().optional(),
+  assignedTechnician: z.string().optional(),
 });
 
 export const updateStatusSchema = z.object({
