@@ -19,10 +19,10 @@ const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const createAcknowledgment = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { clientName, institutionName, trainersPresentCount, traineeNames, clientEmail, signatureImage, trainingImage } = req.body;
+    const { clientName, institutionName, trainingDate, trainersPresentCount, traineeNames, clientEmail, signatureImage, trainingImage } = req.body;
 
-    if (!clientName || !institutionName || !trainersPresentCount || !traineeNames || !clientEmail || !signatureImage || !trainingImage) {
-      throw new AppError('All fields including training photo and digital signature are required', 400);
+    if (!clientName || !institutionName || !clientEmail || !signatureImage || !trainingImage) {
+      throw new AppError('Client name, institution, email, session photo, and digital signature are required', 400);
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,8 +39,9 @@ export const createAcknowledgment = async (req: AuthRequest, res: Response, next
       technicianId: req.user!.userId,
       clientName: clientName.trim(),
       institutionName: institutionName.trim(),
-      trainersPresentCount: Number(trainersPresentCount),
-      traineeNames: traineeNames.trim(),
+      trainingDate: trainingDate ? new Date(trainingDate) : new Date(),
+      trainersPresentCount: trainersPresentCount ? Number(trainersPresentCount) : 1,
+      traineeNames: traineeNames ? traineeNames.trim() : '',
       clientEmail: clientEmail.trim(),
       signatureImage,
       trainingImage,
@@ -48,7 +49,7 @@ export const createAcknowledgment = async (req: AuthRequest, res: Response, next
 
     const safeClientName = escapeHtml(clientName.trim());
     const safeInstName = escapeHtml(institutionName.trim());
-    const safeTraineeNames = escapeHtml(traineeNames.trim());
+    const safeTraineeNames = traineeNames && traineeNames.trim() ? escapeHtml(traineeNames.trim()) : 'Not specified';
     const safeTechName = escapeHtml(techName);
 
     // Send email to client
@@ -121,8 +122,14 @@ export const createAcknowledgment = async (req: AuthRequest, res: Response, next
                       </tr>
                       <tr>
                         <td style="padding: 14px 20px; border-bottom: 1px solid #edf2f7;">
+                          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 3px;">Training Date</div>
+                          <div style="font-size: 14px; font-weight: 600; color: #1e293b;">${(trainingDate ? new Date(trainingDate) : new Date()).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 14px 20px; border-bottom: 1px solid #edf2f7;">
                           <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 3px;">Trainers Present Count</div>
-                          <div style="font-size: 14px; font-weight: 600; color: #1e293b;">${trainersPresentCount} Trainer(s)</div>
+                          <div style="font-size: 14px; font-weight: 600; color: #1e293b;">${trainersPresentCount ? Number(trainersPresentCount) : 1} Trainer(s)</div>
                         </td>
                       </tr>
                       <tr>
@@ -253,6 +260,28 @@ export const getAcknowledgment = async (req: AuthRequest, res: Response, next: N
     }
 
     res.json({ success: true, data: ack });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateAcknowledgmentDate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { trainingDate } = req.body;
+    if (!trainingDate || isNaN(Date.parse(trainingDate))) {
+      throw new AppError('Valid training date is required', 400);
+    }
+
+    const ack = await TrainingAcknowledgment.findById(req.params.id);
+    if (!ack) {
+      throw new AppError('Training acknowledgment not found', 404);
+    }
+
+    ack.trainingDate = new Date(trainingDate);
+    await ack.save();
+    await ack.populate('technicianId', 'name email mobileNumber');
+
+    res.json({ success: true, message: 'Training date updated successfully', data: ack });
   } catch (err) {
     next(err);
   }

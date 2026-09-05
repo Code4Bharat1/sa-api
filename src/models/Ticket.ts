@@ -17,6 +17,18 @@ export interface IResolution {
   resolvedAt: Date;
 }
 
+export interface ICloseDetails {
+  issueDate?: Date;
+  clientName?: string;
+  clientInstitution?: string;
+  technicianVisit?: string;
+  clientAcknowledgment?: string;
+  clientIssue?: string;
+  problemSolved?: string;
+  closureDate?: Date;
+  closedBy?: Types.ObjectId;
+}
+
 export interface IFeedback {
   rating: number;
   comment?: string;
@@ -48,6 +60,7 @@ export interface ITicket extends Document {
   assignedAt?: Date;
   resolution?: IResolution;
   closedAt?: Date;
+  closeDetails?: ICloseDetails;
   feedback?: IFeedback;
   reopenStatus: IReopenStatus;
   isOverdue: boolean;
@@ -69,6 +82,18 @@ const ResolutionSchema = new Schema<IResolution>({
   customerSignature: { type: String },
   remarks: { type: String },
   resolvedAt: { type: Date, default: Date.now },
+});
+
+const CloseDetailsSchema = new Schema<ICloseDetails>({
+  issueDate: { type: Date },
+  clientName: { type: String },
+  clientInstitution: { type: String },
+  technicianVisit: { type: String },
+  clientAcknowledgment: { type: String },
+  clientIssue: { type: String },
+  problemSolved: { type: String },
+  closureDate: { type: Date, default: Date.now },
+  closedBy: { type: Schema.Types.ObjectId, ref: 'User' },
 });
 
 const FeedbackSchema = new Schema<IFeedback>({
@@ -102,6 +127,7 @@ const TicketSchema = new Schema<ITicket>(
     assignedAt: { type: Date },
     resolution: ResolutionSchema,
     closedAt: { type: Date },
+    closeDetails: CloseDetailsSchema,
     feedback: FeedbackSchema,
     reopenStatus: {
       isReopened: { type: Boolean, default: false },

@@ -52,7 +52,8 @@ export const getOne = async (req: AuthRequest, res: Response, next: NextFunction
     const ticket = await Ticket.findOne({ ticketId: req.params.ticketId })
       .populate('customerId', 'name email mobileNumber organizationName panels')
       .populate('assignedTechnician', 'name email mobileNumber')
-      .populate('statusHistory.changedBy', 'name role');
+      .populate('statusHistory.changedBy', 'name role')
+      .populate('closeDetails.closedBy', 'name role');
 
     if (!ticket) throw new AppError('Ticket not found', 404);
 
@@ -82,14 +83,15 @@ export const getOne = async (req: AuthRequest, res: Response, next: NextFunction
 
 export const updateStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { status, remarks, scheduledVisitDate } = req.body;
+    const { status, remarks, scheduledVisitDate, closeDetails } = req.body;
     const ticket = await updateTicketStatus(
       req.params.ticketId,
       status,
       req.user!.userId,
       remarks,
       scheduledVisitDate,
-      req.user!.role
+      req.user!.role,
+      closeDetails
     );
     res.json({ success: true, data: ticket });
   } catch (err) {

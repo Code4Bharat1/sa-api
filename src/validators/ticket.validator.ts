@@ -15,10 +15,22 @@ export const createTicketSchema = z.object({
   assignedTechnician: z.string().optional(),
 });
 
+export const closeDetailsSchema = z.object({
+  issueDate: z.string().optional(),
+  clientName: z.string().optional(),
+  clientInstitution: z.string().optional(),
+  technicianVisit: z.string().optional(),
+  clientAcknowledgment: z.string().optional(),
+  clientIssue: z.string().optional(),
+  problemSolved: z.string().optional(),
+  closureDate: z.string().optional(),
+});
+
 export const updateStatusSchema = z.object({
   status: z.enum(Object.values(TICKET_STATUS) as [string, ...string[]]),
   remarks: z.string().max(500).optional(),
   scheduledVisitDate: z.string().optional(),
+  closeDetails: closeDetailsSchema.optional(),
 });
 
 export const assignTicketSchema = z.object({

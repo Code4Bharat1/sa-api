@@ -161,7 +161,17 @@ export const updateTicketStatus = async (
   actorId: string,
   remarks?: string,
   scheduledVisitDate?: string,
-  actorRole?: string
+  actorRole?: string,
+  closeDetails?: {
+    issueDate?: string;
+    clientName?: string;
+    clientInstitution?: string;
+    technicianVisit?: string;
+    clientAcknowledgment?: string;
+    clientIssue?: string;
+    problemSolved?: string;
+    closureDate?: string;
+  }
 ) => {
   const ticket = await Ticket.findOne({ ticketId });
   if (!ticket) throw new AppError('Ticket not found', 404);
@@ -188,7 +198,9 @@ export const updateTicketStatus = async (
       ? `${remarks} · Visit scheduled on ${formattedVisitDate}`
       : `Visit scheduled on ${formattedVisitDate}`;
   } else if (isAdminClosing && !remarks) {
-    historyRemarks = 'Closed by administrator';
+    historyRemarks = closeDetails?.problemSolved
+      ? `Closed by administrator: ${closeDetails.problemSolved}`
+      : 'Closed by administrator';
   }
 
   const before = { status: ticket.status };
@@ -206,7 +218,34 @@ export const updateTicketStatus = async (
     ticket.scheduledVisitDate = undefined;
   }
 
-  if (newStatus === TICKET_STATUS.CLOSED) ticket.closedAt = new Date();
+  if (newStatus === TICKET_STATUS.CLOSED) {
+    const closedDate = closeDetails?.closureDate ? new Date(closeDetails.closureDate) : new Date();
+    ticket.closedAt = closedDate;
+    if (closeDetails) {
+      ticket.closeDetails = {
+        issueDate: closeDetails.issueDate ? new Date(closeDetails.issueDate) : ticket.createdAt,
+        clientName: closeDetails.clientName,
+        clientInstitution: closeDetails.clientInstitution,
+        technicianVisit: closeDetails.technicianVisit,
+        clientAcknowledgment: closeDetails.clientAcknowledgment,
+        clientIssue: closeDetails.clientIssue,
+        problemSolved: closeDetails.problemSolved,
+        closureDate: closedDate,
+        closedBy: new Types.ObjectId(actorId),
+      };
+
+      if (closeDetails.problemSolved && !ticket.resolution) {
+        ticket.resolution = {
+          workPerformed: closeDetails.problemSolved,
+          partsUsed: [],
+          images: [],
+          remarks: remarks || 'Resolved by administrator',
+          resolvedAt: closedDate,
+        };
+      }
+    }
+  }
+
   if (newStatus === TICKET_STATUS.REOPENED) {
     ticket.reopenStatus.isReopened = true;
     ticket.reopenStatus.reopenCount += 1;
@@ -220,7 +259,7 @@ export const updateTicketStatus = async (
     entity: 'Ticket',
     entityId: ticketId,
     before,
-    after: { status: newStatus },
+    after: { status: newStatus, closeDetails },
     timestamp: new Date(),
   });
 
@@ -255,14 +294,50 @@ export const updateTicketStatus = async (
     } else if (newStatus === TICKET_STATUS.RESOLVED) {
       message = `Your ticket ${ticket.ticketId} has been marked as Resolved.${remarksText} Please log in to confirm the resolution. If the issue persists, you can reopen the ticket.`;
     } else if (newStatus === TICKET_STATUS.CLOSED) {
-      message = `Your support ticket ${ticket.ticketId} has been successfully closed.${remarksText}`;
+      if (closeDetails) {
+        const clientName = closeDetails.clientName || customer.name || 'Client';
+        const clientInstitution = closeDetails.clientInstitution || customer.organizationName || 'N/A';
+        const issueDateFormatted = closeDetails.issueDate
+          ? new Date(closeDetails.issueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+          : new Date(ticket.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const closureDateFormatted = ticket.closedAt
+          ? new Date(ticket.closedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+          : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const techVisit = closeDetails.technicianVisit || 'Not specified';
+        const clientIssue = closeDetails.clientIssue || ticket.description || 'N/A';
+        const problemSolved = closeDetails.problemSolved || remarks || 'Issue resolved successfully';
+        const clientAck = closeDetails.clientAcknowledgment ? `\n• Client Acknowledgment: ${closeDetails.clientAcknowledgment}` : '';
+
+        message = `Dear ${clientName},\n\nYour support ticket ${ticket.ticketId} has been resolved and officially closed by the administrator.\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `TICKET RESOLUTION & CLOSURE SUMMARY\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `• Ticket ID: ${ticket.ticketId}\n` +
+          `• Client Name: ${clientName}\n` +
+          `• Institution: ${clientInstitution}\n` +
+          `• Issue Date: ${issueDateFormatted}\n` +
+          `• Closure Date: ${closureDateFormatted}\n` +
+          `• Client Issue: ${clientIssue}\n` +
+          `• Technician Visit: ${techVisit}\n` +
+          `• What Was Solved: ${problemSolved}` +
+          `${clientAck}\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `ℹ️ PLEASE NOTE FOR YOUR UNDERSTANDING:\nNo further action is required from your side. The problem has been completely resolved.\n\n` +
+          `Thank you for choosing Nexcore Alliance.`;
+      } else {
+        message = `Your support ticket ${ticket.ticketId} has been successfully closed.${remarksText}\n\nNotice for your understanding: No further action is required from your side.`;
+      }
     }
+
+    const emailSubject = newStatus === TICKET_STATUS.CLOSED
+      ? `Ticket ${ticket.ticketId} Resolved & Closed - Nexcore Support`
+      : `Ticket ${ticket.ticketId} Update`;
 
     await notifyUser({
       recipientId: ticket.customerId as Types.ObjectId,
       recipientEmail: customer.email,
       recipientMobile: customer.mobileNumber,
-      subject: `Ticket ${ticket.ticketId} Update`,
+      subject: emailSubject,
       message,
       ticketId: ticket._id as Types.ObjectId,
     });
