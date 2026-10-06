@@ -35,47 +35,82 @@ export const createTicket = async (
       targetCustomerId = data.customerId;
     } else if (data.customCustomerName && data.customCustomerName.trim()) {
       // Find or create customer
-      let existingCustomer = null;
+      const queryOr: any[] = [];
       if (data.customCustomerEmail && data.customCustomerEmail.trim()) {
-        existingCustomer = await User.findOne({
-          email: data.customCustomerEmail.trim().toLowerCase(),
-        });
+        queryOr.push({ email: data.customCustomerEmail.trim().toLowerCase() });
       }
-      if (!existingCustomer && data.customCustomerMobile && data.customCustomerMobile.trim()) {
-        existingCustomer = await User.findOne({
-          mobileNumber: data.customCustomerMobile.trim(),
-        });
+      if (data.customCustomerMobile && data.customCustomerMobile.trim()) {
+        queryOr.push({ mobileNumber: data.customCustomerMobile.trim() });
       }
+
+      let existingCustomer = queryOr.length > 0 ? await User.findOne({ $or: queryOr }) : null;
 
       if (existingCustomer) {
         targetCustomerId = existingCustomer._id.toString();
+        let shouldSave = false;
         if (!existingCustomer.organizationName && data.customOrganizationName) {
           existingCustomer.organizationName = data.customOrganizationName.trim();
+          shouldSave = true;
+        }
+        if (!existingCustomer.mobileNumber && data.customCustomerMobile?.trim()) {
+          existingCustomer.mobileNumber = data.customCustomerMobile.trim();
+          shouldSave = true;
+        }
+        if (data.panelSerialNumber && !existingCustomer.panels?.some(p => p.serialNumber === data.panelSerialNumber.trim())) {
+          if (!existingCustomer.panels) existingCustomer.panels = [];
+          existingCustomer.panels.push({
+            serialNumber: data.panelSerialNumber.trim(),
+            size: 'Standard',
+            installationDate: new Date(),
+          });
+          shouldSave = true;
+        }
+        if (shouldSave) {
           await existingCustomer.save();
         }
       } else {
-        const newCustomerId = await generateCustomerId();
-        const fallbackEmail = data.customCustomerEmail?.trim().toLowerCase()
-          || `cust_${Date.now()}@studentalliancellp.com`;
+        try {
+          const newCustomerId = await generateCustomerId();
+          const fallbackEmail = data.customCustomerEmail?.trim().toLowerCase()
+            || `cust_${Date.now()}@studentalliancellp.com`;
 
-        const createdCustomer = await User.create({
-          customerId: newCustomerId,
-          name: data.customCustomerName.trim(),
-          organizationName: data.customOrganizationName?.trim() || 'Direct Client',
-          email: fallbackEmail,
-          mobileNumber: data.customCustomerMobile?.trim() || undefined,
-          role: ROLES.CUSTOMER,
-          profileComplete: true,
-          isActive: true,
-          panels: data.panelSerialNumber ? [
-            {
-              serialNumber: data.panelSerialNumber.trim(),
-              size: 'Standard',
-              installationDate: new Date(),
+          const createdCustomer = await User.create({
+            customerId: newCustomerId,
+            name: data.customCustomerName.trim(),
+            organizationName: data.customOrganizationName?.trim() || 'Direct Client',
+            email: fallbackEmail,
+            mobileNumber: data.customCustomerMobile?.trim() || undefined,
+            role: ROLES.CUSTOMER,
+            profileComplete: true,
+            isActive: true,
+            panels: data.panelSerialNumber ? [
+              {
+                serialNumber: data.panelSerialNumber.trim(),
+                size: 'Standard',
+                installationDate: new Date(),
+              }
+            ] : [],
+          });
+          targetCustomerId = createdCustomer._id.toString();
+        } catch (createErr: any) {
+          // If a duplicate key collision occurs (code 11000), recover gracefully
+          if (createErr && createErr.code === 11000) {
+            logger.warn('User.create duplicate key on ticket creation, recovering existing user', createErr);
+            const recovered = await User.findOne({
+              $or: [
+                ...(data.customCustomerEmail?.trim() ? [{ email: data.customCustomerEmail.trim().toLowerCase() }] : []),
+                ...(data.customCustomerMobile?.trim() ? [{ mobileNumber: data.customCustomerMobile.trim() }] : []),
+              ],
+            });
+            if (recovered) {
+              targetCustomerId = recovered._id.toString();
+            } else {
+              throw createErr;
             }
-          ] : [],
-        });
-        targetCustomerId = createdCustomer._id.toString();
+          } else {
+            throw createErr;
+          }
+        }
       }
     }
   }

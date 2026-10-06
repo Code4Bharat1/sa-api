@@ -9,8 +9,9 @@ export const env = {
 
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || 'access_secret_dev',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'refresh_secret_dev',
-  JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+  JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN || '2h',
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  COOKIE_DOMAIN: process.env.COOKIE_DOMAIN || undefined,
   CHAT_ENCRYPTION_KEY:
     process.env.CHAT_ENCRYPTION_KEY ||
     'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',

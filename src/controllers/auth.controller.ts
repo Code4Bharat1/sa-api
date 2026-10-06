@@ -16,7 +16,8 @@ const googleClient = new OAuth2Client();
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  sameSite: (env.NODE_ENV === 'production' && env.COOKIE_DOMAIN ? 'none' : 'lax') as 'none' | 'lax',
+  ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
@@ -175,7 +176,7 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
     if (req.user) {
       await User.findByIdAndUpdate(req.user.userId, { refreshTokenHash: null });
     }
-    res.clearCookie('refreshToken');
+    res.clearCookie('refreshToken', COOKIE_OPTS);
     res.json({ success: true, message: 'Logged out' });
   } catch (err) {
     next(err);
