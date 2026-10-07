@@ -17,6 +17,7 @@ import sseRoutes from './routes/sse.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import acknowledgmentRoutes from './routes/acknowledgment.routes.js';
 import deliveryRoutes from './routes/delivery.routes.js';
+import inventoryRoutes from './routes/inventory.routes.js';
 
 import fs from 'fs';
 
@@ -70,6 +71,7 @@ app.use('/api/sse', sseRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/acknowledgments', acknowledgmentRoutes);
 app.use('/api/deliveries', deliveryRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 app.use(errorMiddleware);
 
