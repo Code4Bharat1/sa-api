@@ -10,7 +10,7 @@ export const create = async (req: AuthRequest, res: Response, next: NextFunction
   try {
     const adminId = new Types.ObjectId(req.user!.userId);
     const body = req.body;
-    const cleanSerial = body.panelSerialNumber.trim();
+    const cleanSerial = body.panelSerialNumber.trim().toUpperCase();
 
     // Case-insensitive duplicate serial number check
     const escapedSerial = cleanSerial.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -63,12 +63,20 @@ export const list = async (req: AuthRequest, res: Response, next: NextFunction) 
         { customerName: regex },
         { customerOrganization: regex },
         { panelBrand: regex },
+        { purchaseInvoiceNo: regex },
+        { saleInvoiceNo: regex },
+        { customerPhone: regex },
+        { vendorPhone: regex },
+        { customerEmail: regex },
+        { vendorEmail: regex },
       ];
     }
 
-    const [items, total] = await Promise.all([
+    const [items, total, distinctVendors, distinctCustomers] = await Promise.all([
       PanelInventory.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       PanelInventory.countDocuments(query),
+      PanelInventory.distinct('vendorName', query),
+      PanelInventory.distinct('customerName', query),
     ]);
 
     res.json({
@@ -79,6 +87,8 @@ export const list = async (req: AuthRequest, res: Response, next: NextFunction) 
         page,
         limit,
         totalPages: Math.ceil(total / limit),
+        totalVendors: distinctVendors.length,
+        totalCustomers: distinctCustomers.length,
       },
     });
   } catch (err) {
@@ -114,8 +124,8 @@ export const update = async (req: AuthRequest, res: Response, next: NextFunction
     }
 
     // Check duplicate serial number if serial number changed (case-insensitive)
-    if (req.body.panelSerialNumber && req.body.panelSerialNumber.trim().toLowerCase() !== item.panelSerialNumber.toLowerCase()) {
-      const cleanSerial = req.body.panelSerialNumber.trim();
+    if (req.body.panelSerialNumber && req.body.panelSerialNumber.trim().toUpperCase() !== item.panelSerialNumber) {
+      const cleanSerial = req.body.panelSerialNumber.trim().toUpperCase();
       const escapedSerial = cleanSerial.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const existing = await PanelInventory.findOne({
         panelSerialNumber: { $regex: new RegExp(`^${escapedSerial}$`, 'i') },
@@ -129,7 +139,7 @@ export const update = async (req: AuthRequest, res: Response, next: NextFunction
     const before = item.toObject();
     Object.assign(item, req.body);
     if (req.body.panelSerialNumber) {
-      item.panelSerialNumber = req.body.panelSerialNumber.trim();
+      item.panelSerialNumber = req.body.panelSerialNumber.trim().toUpperCase();
     }
     await item.save();
 
